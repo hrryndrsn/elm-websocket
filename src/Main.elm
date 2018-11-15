@@ -5,6 +5,7 @@ import Html exposing (Html, button, div, h1, img, text)
 import Html.Attributes exposing (src)
 import Html.Events exposing (onClick)
 import Json.Decode as Decode
+import Json.Decode.Pipeline exposing (hardcoded, optional, required)
 import Json.Encode as E
 
 
@@ -30,6 +31,10 @@ type alias Model =
     { counter : Int
     , activeUsers : String
     }
+
+
+type alias WindowEvent =
+    { user : String }
 
 
 init : ( Model, Cmd Msg )
@@ -59,16 +64,41 @@ update msg model =
             let
                 pv =
                     parseVal value
+
+                throwAway =
+                    Debug.log "pv: " pv
             in
             case pv of
-                Ok str ->
-                    ( { model | activeUsers = str }, Cmd.none )
+                Ok windowEvent ->
+                    ( { model | activeUsers = windowEvent.user }, Cmd.none )
 
-                _ ->
+                Err error ->
+                    let
+                        errorMessage =
+                            handleDecodeError error
+                    in
                     ( model, Cmd.none )
 
+        -- in
+        -- ( { model | activeUsers = "Error Parsing value in update" }, Cmd.none )
         NoOp ->
             ( model, Cmd.none )
+
+
+handleDecodeError : Decode.Error -> String
+handleDecodeError error =
+    case error of
+        Decode.Field str errr ->
+            "Field Error"
+
+        Decode.Index int err ->
+            "Index Error"
+
+        Decode.OneOf errList ->
+            "List of Errors"
+
+        Decode.Failure str val ->
+            "Failure error"
 
 
 
@@ -113,6 +143,12 @@ subscriptions model =
 --returns a result which is a decode error or a string
 
 
-parseVal : E.Value -> Result.Result Decode.Error String
+parseVal : E.Value -> Result.Result Decode.Error WindowEvent
 parseVal value =
-    Decode.decodeValue Decode.string value
+    Decode.decodeValue windowEventDecoder value
+
+
+windowEventDecoder : Decode.Decoder WindowEvent
+windowEventDecoder =
+    Decode.succeed WindowEvent
+        |> optional "user" Decode.string "did not make it"
