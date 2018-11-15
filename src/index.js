@@ -11,4 +11,10 @@ app.ports.cache.subscribe(function(data) {
   console.log(data)
 });
 
+window.addEventListener('resize', (event) => {
+  const activeUsers = "derp"
+  app.ports.activeUsers.send(activeUsers);
+  console.log('resize event')
+})
+
 registerServiceWorker();

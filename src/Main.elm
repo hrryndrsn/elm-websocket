@@ -1,13 +1,25 @@
-port module Main exposing (Model, Msg(..), cache, init, main, update, view)
+port module Main exposing (Model, Msg(..), activeUsers, cache, init, main, update, view)
 
 import Browser
 import Html exposing (Html, button, div, h1, img, text)
 import Html.Attributes exposing (src)
 import Html.Events exposing (onClick)
+import Json.Decode as Decode
 import Json.Encode as E
 
 
+
+-- port out
+
+
 port cache : E.Value -> Cmd msg
+
+
+
+--port In
+
+
+port activeUsers : (E.Value -> msg) -> Sub msg
 
 
 
@@ -15,12 +27,14 @@ port cache : E.Value -> Cmd msg
 
 
 type alias Model =
-    { counter : Int }
+    { counter : Int
+    , activeUsers : String
+    }
 
 
 init : ( Model, Cmd Msg )
 init =
-    ( { counter = 0 }, Cmd.none )
+    ( { counter = 0, activeUsers = "none" }, Cmd.none )
 
 
 
@@ -29,14 +43,32 @@ init =
 
 type Msg
     = SendCache
+    | Changed E.Value
     | NoOp
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-    ( { model | counter = model.counter + 1 }
-    , cache (E.int (model.counter + 1))
-    )
+    case msg of
+        SendCache ->
+            ( { model | counter = model.counter + 1 }
+            , cache (E.int (model.counter + 1))
+            )
+
+        Changed value ->
+            let
+                pv =
+                    parseVal value
+            in
+            case pv of
+                Ok str ->
+                    ( { model | activeUsers = str }, Cmd.none )
+
+                _ ->
+                    ( model, Cmd.none )
+
+        NoOp ->
+            ( model, Cmd.none )
 
 
 
@@ -62,5 +94,25 @@ main =
         { view = view
         , init = \_ -> init
         , update = update
-        , subscriptions = always Sub.none
+        , subscriptions = subscriptions
         }
+
+
+
+-- Subscriptions
+
+
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    activeUsers Changed
+
+
+
+-- DECODERS
+--deoces a value to a stirng
+--returns a result which is a decode error or a string
+
+
+parseVal : E.Value -> Result.Result Decode.Error String
+parseVal value =
+    Decode.decodeValue Decode.string value
