@@ -64,9 +64,6 @@ update msg model =
             let
                 pv =
                     parseVal value
-
-                throwAway =
-                    Debug.log "pv: " pv
             in
             case pv of
                 Ok windowEvent ->
