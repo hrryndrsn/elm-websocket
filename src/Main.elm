@@ -119,7 +119,6 @@ view model =
         [ div []
             [ renderSvg ( model.window.width, model.window.height )
             ]
-        , renderPlainPage model.window.width model.window.height
         ]
 
 
@@ -158,7 +157,7 @@ renderSvg ( w, h ) =
     svg
         [ width sw, height sh, viewBox ("0 0" ++ " " ++ sw ++ " " ++ sh), fill "white" ]
         [ Svg.text_ [ fill "black", x "20", y "35" ] [ Svg.text (sw ++ " " ++ sh) ]
-        , circle [ cx halfW, cy halfH, r "150", fill "black" ] []
+        , circle [ onClick ClickedSvg, cx halfW, cy halfH, r "150", fill "black" ] []
         ]
 
 
