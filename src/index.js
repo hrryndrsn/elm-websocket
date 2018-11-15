@@ -12,7 +12,6 @@ app.ports.cache.subscribe(function(data) {
 });
 
 window.addEventListener('resize', (event) => {
-  console.log(event)
   const activeUsers = { 
     height: event.target.innerHeight,
     width: event.target.innerWidth

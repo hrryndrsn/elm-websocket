@@ -7,6 +7,9 @@ import Html.Events exposing (onClick)
 import Json.Decode as Decode
 import Json.Decode.Pipeline exposing (hardcoded, optional, required)
 import Json.Encode as E
+import Svg exposing (circle, rect, svg, text)
+import Svg.Attributes exposing (cx, cy, fill, height, r, rx, ry, viewBox, width, x, y)
+import Svg.Events exposing (onClick)
 
 
 
@@ -51,6 +54,7 @@ init =
 type Msg
     = SendCache
     | Changed E.Value
+    | ClickedSvg
     | NoOp
 
 
@@ -77,6 +81,11 @@ update msg model =
                             handleDecodeError error
                     in
                     ( model, Cmd.none )
+
+        ClickedSvg ->
+            ( { model | counter = model.counter + 1 }
+            , cache (E.int (model.counter + 1))
+            )
 
         -- in
         -- ( { model | window = "Error Parsing value in update" }, Cmd.none )
@@ -107,17 +116,49 @@ handleDecodeError error =
 view : Model -> Html Msg
 view model =
     div []
+        [ div []
+            [ renderSvg ( model.window.width, model.window.height )
+            ]
+        , renderPlainPage model.window.width model.window.height
+        ]
+
+
+renderPlainPage : Int -> Int -> Html.Html Msg
+renderPlainPage width height =
+    div []
         [ img [ src "/logo.svg" ] []
         , h1 [] [ text "Your Elm App is working!" ]
         , p []
             [ text "window.width: "
-            , text (String.fromInt model.window.width)
+            , text (String.fromInt width)
             ]
         , p []
             [ text " window.height: "
-            , text (String.fromInt model.window.height)
+            , text (String.fromInt height)
             ]
         , button [ onClick SendCache ] [ text "cache" ]
+        ]
+
+
+renderSvg : ( Int, Int ) -> Html.Html Msg
+renderSvg ( w, h ) =
+    let
+        sw =
+            String.fromInt w
+
+        sh =
+            String.fromInt h
+
+        halfW =
+            String.fromFloat (toFloat w / 2)
+
+        halfH =
+            String.fromFloat (toFloat h / 2)
+    in
+    svg
+        [ width sw, height sh, viewBox ("0 0" ++ " " ++ sw ++ " " ++ sh), fill "white" ]
+        [ Svg.text_ [ fill "black", x "20", y "35" ] [ Svg.text (sw ++ " " ++ sh) ]
+        , circle [ cx halfW, cy halfH, r "150", fill "black" ] []
         ]
 
 
