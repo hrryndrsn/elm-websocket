@@ -12,8 +12,12 @@ app.ports.cache.subscribe(function(data) {
 });
 
 window.addEventListener('resize', (event) => {
-  const activeUsers = { "user" : "derp"}
-  app.ports.activeUsers.send(activeUsers);
+  console.log(event)
+  const activeUsers = { 
+    height: event.target.innerHeight,
+    width: event.target.innerWidth
+    }
+  app.ports.window.send(activeUsers);
   console.log('resize event')
 })
 

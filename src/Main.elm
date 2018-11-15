@@ -1,7 +1,7 @@
-port module Main exposing (Model, Msg(..), activeUsers, cache, init, main, update, view)
+port module Main exposing (Model, Msg(..), cache, init, main, update, view, window)
 
 import Browser
-import Html exposing (Html, button, div, h1, img, text)
+import Html exposing (Html, button, div, h1, img, p, text)
 import Html.Attributes exposing (src)
 import Html.Events exposing (onClick)
 import Json.Decode as Decode
@@ -20,7 +20,7 @@ port cache : E.Value -> Cmd msg
 --port In
 
 
-port activeUsers : (E.Value -> msg) -> Sub msg
+port window : (E.Value -> msg) -> Sub msg
 
 
 
@@ -29,17 +29,19 @@ port activeUsers : (E.Value -> msg) -> Sub msg
 
 type alias Model =
     { counter : Int
-    , activeUsers : String
+    , window : WindowEvent
     }
 
 
 type alias WindowEvent =
-    { user : String }
+    { width : Int
+    , height : Int
+    }
 
 
 init : ( Model, Cmd Msg )
 init =
-    ( { counter = 0, activeUsers = "none" }, Cmd.none )
+    ( { counter = 0, window = { width = 5, height = 5 } }, Cmd.none )
 
 
 
@@ -67,7 +69,7 @@ update msg model =
             in
             case pv of
                 Ok windowEvent ->
-                    ( { model | activeUsers = windowEvent.user }, Cmd.none )
+                    ( { model | window = windowEvent }, Cmd.none )
 
                 Err error ->
                     let
@@ -77,7 +79,7 @@ update msg model =
                     ( model, Cmd.none )
 
         -- in
-        -- ( { model | activeUsers = "Error Parsing value in update" }, Cmd.none )
+        -- ( { model | window = "Error Parsing value in update" }, Cmd.none )
         NoOp ->
             ( model, Cmd.none )
 
@@ -107,6 +109,14 @@ view model =
     div []
         [ img [ src "/logo.svg" ] []
         , h1 [] [ text "Your Elm App is working!" ]
+        , p []
+            [ text "window.width: "
+            , text (String.fromInt model.window.width)
+            ]
+        , p []
+            [ text " window.height: "
+            , text (String.fromInt model.window.height)
+            ]
         , button [ onClick SendCache ] [ text "cache" ]
         ]
 
@@ -131,7 +141,7 @@ main =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    activeUsers Changed
+    window Changed
 
 
 
@@ -148,4 +158,5 @@ parseVal value =
 windowEventDecoder : Decode.Decoder WindowEvent
 windowEventDecoder =
     Decode.succeed WindowEvent
-        |> optional "user" Decode.string "did not make it"
+        |> optional "width" Decode.int 0
+        |> optional "height" Decode.int 0
