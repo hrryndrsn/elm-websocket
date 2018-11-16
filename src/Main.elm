@@ -10,6 +10,7 @@ import Json.Encode as E
 import Svg exposing (circle, rect, svg, text)
 import Svg.Attributes exposing (cx, cy, fill, height, r, rx, ry, viewBox, width, x, y)
 import Svg.Events exposing (onClick)
+import Time exposing (..)
 
 
 
@@ -33,6 +34,7 @@ port window : (E.Value -> msg) -> Sub msg
 type alias Model =
     { counter : Int
     , window : WindowEvent
+    , time : Time.Posix
     }
 
 
@@ -44,7 +46,7 @@ type alias WindowEvent =
 
 init : ( Model, Cmd Msg )
 init =
-    ( { counter = 0, window = { width = 5, height = 5 } }, Cmd.none )
+    ( { counter = 0, window = { width = 5, height = 5 }, time = Time.millisToPosix 0 }, Cmd.none )
 
 
 
@@ -55,6 +57,7 @@ type Msg
     = SendCache
     | Changed E.Value
     | ClickedSvg
+    | Tick Time.Posix
     | NoOp
 
 
@@ -89,6 +92,11 @@ update msg model =
 
         -- in
         -- ( { model | window = "Error Parsing value in update" }, Cmd.none )
+        Tick newTime ->
+            ( { model | time = newTime }
+            , Cmd.none
+            )
+
         NoOp ->
             ( model, Cmd.none )
 
@@ -181,7 +189,7 @@ main =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    window Changed
+    Sub.batch [ window Changed, Time.every 1000 Tick ]
 
 
 
