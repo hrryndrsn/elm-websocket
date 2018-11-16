@@ -11,13 +11,24 @@ app.ports.cache.subscribe(function(data) {
   console.log(data)
 });
 
+
+
+window.addEventListener('load', (event) => {
+  const windowSize = { 
+    height: event.currentTarget.innerHeight,
+    width: event.currentTarget.innerWidth
+    }
+  app.ports.window.send(windowSize);
+  console.log('load event', event.currentTarget.innerHeight, event.currentTarget.innerWidth)
+});
+
 window.addEventListener('resize', (event) => {
-  const activeUsers = { 
+  const windowSize = { 
     height: event.target.innerHeight,
     width: event.target.innerWidth
     }
-  app.ports.window.send(activeUsers);
+  app.ports.window.send(windowSize);
   console.log('resize event')
-})
+});
 
 registerServiceWorker();

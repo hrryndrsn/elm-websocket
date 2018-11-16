@@ -142,10 +142,10 @@ renderPlainPage width height =
 renderSvg : ( Int, Int ) -> Html.Html Msg
 renderSvg ( w, h ) =
     let
-        sw =
+        stringWidth =
             String.fromInt w
 
-        sh =
+        stringHeight =
             String.fromInt h
 
         halfW =
@@ -155,8 +155,8 @@ renderSvg ( w, h ) =
             String.fromFloat (toFloat h / 2)
     in
     svg
-        [ width sw, height sh, viewBox ("0 0" ++ " " ++ sw ++ " " ++ sh), fill "white" ]
-        [ Svg.text_ [ fill "black", x "20", y "35" ] [ Svg.text (sw ++ " " ++ sh) ]
+        [ width stringWidth, height stringHeight, viewBox ("0 0" ++ " " ++ stringWidth ++ " " ++ stringHeight), fill "white" ]
+        [ Svg.text_ [ fill "black", x "20", y "35" ] [ Svg.text (stringWidth ++ " " ++ stringHeight) ]
         , circle [ onClick ClickedSvg, cx halfW, cy halfH, r "150", fill "black" ] []
         ]
 
