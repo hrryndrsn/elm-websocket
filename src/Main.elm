@@ -1,15 +1,12 @@
-port module Main exposing (Model, Msg(..), cache, init, main, update, view, window)
+port module Main exposing (Model, Msg(..), cache, init, main, receiveWS, update, view, window)
 
 import Browser
-import Html exposing (Html, button, div, h1, img, p, text)
+import Html exposing (Html, button, div, h1, img, input, p, text)
 import Html.Attributes exposing (src)
-import Html.Events exposing (onClick)
+import Html.Events exposing (onClick, onInput)
 import Json.Decode as Decode
 import Json.Decode.Pipeline exposing (hardcoded, optional, required)
 import Json.Encode as E
-import Svg exposing (circle, rect, svg, text)
-import Svg.Attributes exposing (cx, cy, fill, height, r, rx, ry, viewBox, width, x, y)
-import Svg.Events exposing (onClick)
 import Time exposing (..)
 
 
@@ -20,11 +17,17 @@ import Time exposing (..)
 port cache : E.Value -> Cmd msg
 
 
+port sendWS : E.Value -> Cmd msg
+
+
 
 --port In
 
 
 port window : (E.Value -> msg) -> Sub msg
+
+
+port receiveWS : (E.Value -> msg) -> Sub msg
 
 
 
@@ -34,7 +37,8 @@ port window : (E.Value -> msg) -> Sub msg
 type alias Model =
     { counter : Int
     , window : WindowEvent
-    , time : Time.Posix
+    , inputText : String
+    , chatStream : String
     }
 
 
@@ -44,11 +48,20 @@ type alias WindowEvent =
     }
 
 
+type alias WSMessageOut =
+    String
+
+
+type alias WSMessageIn =
+    String
+
+
 init : ( Model, Cmd Msg )
 init =
     ( { counter = 0
       , window = { width = 5, height = 5 }
-      , time = Time.millisToPosix 0
+      , inputText = ""
+      , chatStream = "no message"
       }
     , Cmd.none
     )
@@ -60,9 +73,10 @@ init =
 
 type Msg
     = SendCache
+    | SendWS WSMessageOut
     | Changed E.Value
-    | ClickedSvg
-    | Tick Time.Posix
+    | ReceiveWS E.Value
+    | ChangedInput String
     | NoOp
 
 
@@ -72,6 +86,11 @@ update msg model =
         SendCache ->
             ( { model | counter = model.counter + 1 }
             , cache (E.int (model.counter + 1))
+            )
+
+        SendWS str ->
+            ( model
+            , sendWS (E.string str)
             )
 
         Changed value ->
@@ -94,21 +113,28 @@ update msg model =
                     in
                     ( model, Cmd.none )
 
-        ClickedSvg ->
-            ( { model | counter = model.counter + 1 }
-            , cache (E.int (model.counter + 1))
-            )
+        ReceiveWS value ->
+            let
+                pv =
+                    parseWSVal value
+            in
+            case pv of
+                Ok string ->
+                    ( { model
+                        | chatStream = string
+                      }
+                    , Cmd.none
+                    )
 
-        -- in
-        -- ( { model | window = "Error Parsing value in update" }, Cmd.none )
-        Tick newTime ->
-            ( { model
-                | time = newTime
+                Err error ->
+                    let
+                        errorMessage =
+                            handleDecodeError error
+                    in
+                    ( model, Cmd.none )
 
-                -- , velocity = model.velocity * 2
-              }
-            , Cmd.none
-            )
+        ChangedInput str ->
+            ( { model | inputText = str }, Cmd.none )
 
         NoOp ->
             ( model, Cmd.none )
@@ -138,64 +164,17 @@ view : Model -> Html Msg
 view model =
     div []
         [ div []
-            [ renderPlainPage model.window.width model.window.height
-
-            --   renderSvg
-            --     ( model.window.width
-            --     , model.window.height
-            --     )
-            ]
-        ]
-
-
-renderPlainPage : Int -> Int -> Html.Html Msg
-renderPlainPage width height =
-    div []
-        [ img [ src "/logo.svg" ] []
-        , h1 []
-            [ text
-                "Your Elm App is working!"
-            ]
-        , p []
-            [ text "window.width: "
-            , text (String.fromInt width)
-            ]
-        , p []
-            [ text " window.height: "
-            , text (String.fromInt height)
-            ]
-        , button [ onClick SendCache ] [ text "cache" ]
-        ]
-
-
-renderSvg : ( Int, Int ) -> Html.Html Msg
-renderSvg ( w, h ) =
-    let
-        stringWidth =
-            String.fromInt w
-
-        stringHeight =
-            String.fromInt h
-    in
-    svg
-        [ width stringWidth
-        , height stringHeight
-        , viewBox
-            ("0 0"
-                ++ " "
-                ++ stringWidth
-                ++ " "
-                ++ stringHeight
-            )
-        , fill "white"
-        ]
-        [ Svg.text_
-            [ fill "black"
-            , x "20"
-            , y "35"
-            ]
-            [ Svg.text
-                (stringWidth ++ " " ++ stringHeight)
+            [ div []
+                [ h1 []
+                    [ text
+                        "websocket fun"
+                    ]
+                , div [] [ text model.chatStream ]
+                , div []
+                    [ input [ onInput ChangedInput ] []
+                    , button [ onClick (SendWS model.inputText) ] [ text " send ws" ]
+                    ]
+                ]
             ]
         ]
 
@@ -220,7 +199,10 @@ main =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Sub.batch [ window Changed, Time.every 1000 Tick ]
+    Sub.batch
+        [ window Changed
+        , receiveWS ReceiveWS
+        ]
 
 
 
@@ -239,3 +221,8 @@ windowEventDecoder =
     Decode.succeed WindowEvent
         |> optional "width" Decode.int 0
         |> optional "height" Decode.int 0
+
+
+parseWSVal : E.Value -> Result.Result Decode.Error String
+parseWSVal value =
+    Decode.decodeValue Decode.string value

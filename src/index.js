@@ -7,8 +7,18 @@ const app = Elm.Main.init({
   node: document.getElementById('root')
 });
 
+//ports 
 app.ports.cache.subscribe(function(data) {
   localStorage.setItem('cache', JSON.stringify(data));
+  console.log(data)
+});
+
+//ELM -> JS Port 
+app.ports.sendWS.subscribe(function(data) { 
+  localStorage.setItem('cache', JSON.stringify(data));
+  websocket.send(JSON.stringify(data)); 
+  console.log("/////////////////////////////////");
+  console.log("WS SENT ");
   console.log(data)
 });
 
@@ -30,7 +40,7 @@ window.addEventListener('resize', (event) => {
     width: event.target.innerWidth
     }
   app.ports.window.send(windowSize);
-  console.log('resize event')
+  // console.log('resize event')
 });
 
 
@@ -39,6 +49,7 @@ window.addEventListener('resize', (event) => {
 // Create WebSocket connection.
 const websocket = new WebSocket('wss://echo.websocket.org/');
 
+//register event handlers below
 websocket.onopen = function(evt) { onOpen(evt) };
 websocket.onclose = function(evt) { onClose(evt) };
 websocket.onmessage = function(evt) { onMessage(evt) };
@@ -46,12 +57,13 @@ websocket.onerror = function(evt) { onError(evt) };
 
 
 
-//Websocket Handlers
+//Websocket Event Handlers
 const onOpen = (evt) => {
   console.log("Websocket | Open event");
   //when the websocket is ready, fire the message to be echoed
   const message = { derpLevel: "High", name: "Zord"} //send an object
-  websocket.send(JSON.stringify(message)); // have to stringify it when sending
+  // have to stringify it when sending
+  websocket.send(JSON.stringify(message)); 
 };
 
 const onClose = (evt) => {
@@ -59,17 +71,19 @@ const onClose = (evt) => {
 };
 
 const onMessage = (evt) => {
-  const str = JSON.parse(evt.data); // parse the stringified message
-  console.log(str);
+  // parse the stringified message
+  const data = JSON.parse(evt.data); 
+  console.log("/////////////////////////////////");
+  console.log("WS RECEIVED");
+  console.log( data);
+
+  //send the data back to elm 
+  app.ports.receiveWS.send(data);
 };
 
 const onError = (evt) => {
   console.log("Websocket | Error event", evt);
 };
-
-//todo send values to through elm port 
-
-
 
 // register service worker (comes with create-elm-app)
 registerServiceWorker();
