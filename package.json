@@ -1,0 +1,22 @@
+{
+  "name": "elm-websocket",
+  "version": "1.0.0",
+  "description": "Ported create-elm-app",
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": "git+https://github.com/hrryndrsn/elm-websocket.git",
+  "author": "hrryndrsn <harryanderson9@gmail.com>",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/hrryndrsn/elm-websocket/issues"
+  },
+  "homepage": "https://github.com/hrryndrsn/elm-websocket#readme",
+  "dependencies": {
+    "d3": "^5.7.0"
+  }
+}

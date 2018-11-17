@@ -7,6 +7,8 @@ import Html.Events exposing (onClick, onInput)
 import Json.Decode as Decode
 import Json.Decode.Pipeline exposing (hardcoded, optional, required)
 import Json.Encode as E
+import Svg exposing (rect, svg)
+import Svg.Attributes exposing (fill, height, width, x, y)
 import Time exposing (..)
 
 
@@ -38,7 +40,7 @@ type alias Model =
     { counter : Int
     , window : WindowEvent
     , inputText : String
-    , chatStream : String
+    , chatStream : List String
     }
 
 
@@ -61,7 +63,7 @@ init =
     ( { counter = 0
       , window = { width = 5, height = 5 }
       , inputText = ""
-      , chatStream = "no message"
+      , chatStream = [ "" ]
       }
     , Cmd.none
     )
@@ -121,7 +123,7 @@ update msg model =
             case pv of
                 Ok string ->
                     ( { model
-                        | chatStream = string
+                        | chatStream = string :: model.chatStream
                       }
                     , Cmd.none
                     )
@@ -169,10 +171,20 @@ view model =
                     [ text
                         "websocket fun"
                     ]
-                , div [] [ text model.chatStream ]
+                , div []
+                    (List.map (\chatString -> p [] [ text chatString ]) model.chatStream
+                        |> List.reverse
+                    )
                 , div []
                     [ input [ onInput ChangedInput ] []
                     , button [ onClick (SendWS model.inputText) ] [ text " send ws" ]
+                    ]
+                , svg []
+                    [ rect [ width "50", height "50", fill "blank", x "100", y "100" ] []
+                    , rect [ width "50", height "50", fill "blank", x "100", y "100" ] []
+                    , rect [ width "50", height "50", fill "blank", x "100", y "100" ] []
+                    , rect [ width "50", height "50", fill "blank", x "100", y "100" ] []
+                    , rect [ width "50", height "50", fill "blank", x "100", y "100" ] []
                     ]
                 ]
             ]
