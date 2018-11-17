@@ -46,7 +46,12 @@ type alias WindowEvent =
 
 init : ( Model, Cmd Msg )
 init =
-    ( { counter = 0, window = { width = 5, height = 5 }, time = Time.millisToPosix 0 }, Cmd.none )
+    ( { counter = 0
+      , window = { width = 5, height = 5 }
+      , time = Time.millisToPosix 0
+      }
+    , Cmd.none
+    )
 
 
 
@@ -76,7 +81,11 @@ update msg model =
             in
             case pv of
                 Ok windowEvent ->
-                    ( { model | window = windowEvent }, Cmd.none )
+                    ( { model
+                        | window = windowEvent
+                      }
+                    , Cmd.none
+                    )
 
                 Err error ->
                     let
@@ -93,7 +102,11 @@ update msg model =
         -- in
         -- ( { model | window = "Error Parsing value in update" }, Cmd.none )
         Tick newTime ->
-            ( { model | time = newTime }
+            ( { model
+                | time = newTime
+
+                -- , velocity = model.velocity * 2
+              }
             , Cmd.none
             )
 
@@ -125,7 +138,12 @@ view : Model -> Html Msg
 view model =
     div []
         [ div []
-            [ renderSvg ( model.window.width, model.window.height )
+            [ renderPlainPage model.window.width model.window.height
+
+            --   renderSvg
+            --     ( model.window.width
+            --     , model.window.height
+            --     )
             ]
         ]
 
@@ -134,7 +152,10 @@ renderPlainPage : Int -> Int -> Html.Html Msg
 renderPlainPage width height =
     div []
         [ img [ src "/logo.svg" ] []
-        , h1 [] [ text "Your Elm App is working!" ]
+        , h1 []
+            [ text
+                "Your Elm App is working!"
+            ]
         , p []
             [ text "window.width: "
             , text (String.fromInt width)
@@ -155,17 +176,27 @@ renderSvg ( w, h ) =
 
         stringHeight =
             String.fromInt h
-
-        halfW =
-            String.fromFloat (toFloat w / 2)
-
-        halfH =
-            String.fromFloat (toFloat h / 2)
     in
     svg
-        [ width stringWidth, height stringHeight, viewBox ("0 0" ++ " " ++ stringWidth ++ " " ++ stringHeight), fill "white" ]
-        [ Svg.text_ [ fill "black", x "20", y "35" ] [ Svg.text (stringWidth ++ " " ++ stringHeight) ]
-        , circle [ onClick ClickedSvg, cx halfW, cy halfH, r "150", fill "black" ] []
+        [ width stringWidth
+        , height stringHeight
+        , viewBox
+            ("0 0"
+                ++ " "
+                ++ stringWidth
+                ++ " "
+                ++ stringHeight
+            )
+        , fill "white"
+        ]
+        [ Svg.text_
+            [ fill "black"
+            , x "20"
+            , y "35"
+            ]
+            [ Svg.text
+                (stringWidth ++ " " ++ stringHeight)
+            ]
         ]
 
 
