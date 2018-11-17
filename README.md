@@ -1,3 +1,3 @@
-## Elm + SVG creative coding template
+## Elm websocket experiements
 
-Ported create-elm-app template
+Ported create-elm-app
