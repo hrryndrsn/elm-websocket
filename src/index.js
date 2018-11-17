@@ -50,7 +50,8 @@ websocket.onerror = function(evt) { onError(evt) };
 const onOpen = (evt) => {
   console.log("Websocket | Open event");
   //when the websocket is ready, fire the message to be echoed
-  websocket.send("echo");
+  const message = { derpLevel: "High", name: "Zord"} //send an object
+  websocket.send(JSON.stringify(message)); // have to stringify it when sending
 };
 
 const onClose = (evt) => {
@@ -58,14 +59,15 @@ const onClose = (evt) => {
 };
 
 const onMessage = (evt) => {
-  console.log(`Websocket | Message Recieved`, evt);
+  const str = JSON.parse(evt.data); // parse the stringified message
+  console.log(str);
 };
 
 const onError = (evt) => {
   console.log("Websocket | Error event", evt);
 };
 
-
+//todo send values to through elm port 
 
 
 
