@@ -119,6 +119,7 @@ const onMessage = evt => {
       app.ports.receiveSnapshot.send(data)
     case "l2update":
       // console.log("L2 Update ///");
+      // console.log(data);
   }
 
   // console.log("/////////////////////////////////");
@@ -126,7 +127,7 @@ const onMessage = evt => {
   // console.log(data);
 
   //send the data back to elm
-  // app.ports.receiveWS.send(data);
+  app.ports.receiveUpdate.send(data);
 };
 
 const onError = evt => {

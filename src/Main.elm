@@ -1,9 +1,10 @@
-port module Main exposing (Model, Msg(..), cache, init, main, receiveSnapshot, receiveWS, update, view, window)
+port module Main exposing (Model, Msg(..), cache, init, main, receiveSnapshot, receiveUpdate, update, view, window)
 
 import Browser
 import Html exposing (Html, button, div, h1, h2, img, input, li, p, text, ul)
 import Html.Attributes exposing (class, src)
 import Html.Events exposing (onClick, onInput)
+import Html.Lazy exposing (lazy, lazy2)
 import Json.Decode as Decode
 import Json.Decode.Pipeline exposing (hardcoded, optional, required)
 import Json.Encode as E
@@ -32,7 +33,7 @@ port window : (E.Value -> msg) -> Sub msg
 port receiveSnapshot : (E.Value -> msg) -> Sub msg
 
 
-port receiveWS : (E.Value -> msg) -> Sub msg
+port receiveUpdate : (E.Value -> msg) -> Sub msg
 
 
 
@@ -66,6 +67,14 @@ type alias Snapshot =
     , asks : List Order
     , bids : List Order
     }
+
+
+type alias ChangesPacket =
+    List String
+
+
+type alias Changes =
+    List Float
 
 
 type alias Order =
@@ -106,7 +115,7 @@ type Msg
     = SendCache
     | SendWS WSMessageOut
     | Changed E.Value
-    | ReceiveWS E.Value
+    | ReceiveUpdate E.Value
     | ReceiveSnapshot E.Value
     | ChangedInput String
     | NoOp
@@ -145,13 +154,17 @@ update msg model =
                     in
                     ( model, Cmd.none )
 
-        ReceiveWS value ->
+        ReceiveUpdate value ->
             let
                 pv =
-                    parseWSVal value
+                    parseChangesPacket value
             in
             case pv of
-                Ok string ->
+                Ok packet ->
+                    let
+                        throwaway =
+                            Debug.log "" packet
+                    in
                     ( model
                     , Cmd.none
                     )
@@ -226,39 +239,46 @@ handleDecodeError error =
 view : Model -> Html Msg
 view model =
     div []
-        [ div [ class "header" ]
-            [ h2 [] [ text model.orderBook.productId ] ]
+        [ lazy renderHeader model.orderBook.productId
         , div
             [ class "orderbook" ]
-            [ div [ class "asks" ]
-                [ div [ class "title" ] [ text "Asks" ]
-                , div [ class "table" ] (List.map renderOrderList model.orderBook.asks)
-                ]
-            , div [ class "bids" ]
-                [ div [ class "title" ] [ text "Bids" ]
-                , div [ class "table" ] (List.map renderOrderList model.orderBook.bids)
-                ]
+            [ lazy2 renderTable "asks" model.orderBook.asks
+            , lazy2 renderTable "bids" model.orderBook.bids
             ]
+        ]
+
+
+renderHeader : String -> Html msg
+renderHeader productId =
+    div [ class "header" ]
+        [ h2 [] [ text productId ] ]
+
+
+renderTable : String -> List FloatOrder -> Html sg
+renderTable name list =
+    div [ class name ]
+        [ div [ class "title" ] [ text name ]
+        , div [ class "table" ] (List.map renderOrderList list)
         ]
 
 
 renderOrderList : FloatOrder -> Html msg
 renderOrderList order =
     let
-        x =
+        price =
             findHead order
 
-        y =
+        size =
             findEnd order
     in
     div [ class "row" ]
         [ div []
             [ text "price: "
-            , text (String.fromFloat x)
+            , text (String.fromFloat price)
             ]
         , div []
             [ text " size: "
-            , text (String.fromFloat y)
+            , text (String.fromFloat size)
             ]
         ]
 
@@ -340,7 +360,7 @@ subscriptions : Model -> Sub Msg
 subscriptions model =
     Sub.batch
         [ window Changed
-        , receiveWS ReceiveWS
+        , receiveUpdate ReceiveUpdate
         , receiveSnapshot ReceiveSnapshot
         ]
 
@@ -417,3 +437,17 @@ parseFloat str =
 
         Nothing ->
             0.0
+
+
+
+-- Changes decoders
+
+
+decodeChangesPacket : Decode.Decoder ChangesPacket
+decodeChangesPacket =
+    Decode.list Decode.string
+
+
+parseChangesPacket : E.Value -> Result.Result Decode.Error ChangesPacket
+parseChangesPacket packet =
+    Decode.decodeValue decodeChangesPacket packet
