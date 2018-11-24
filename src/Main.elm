@@ -69,6 +69,13 @@ type alias Snapshot =
     }
 
 
+type alias MarketUpdate =
+    { product_id : String
+    , time : String
+    , changes : List ChangesPacket
+    }
+
+
 type alias ChangesPacket =
     List String
 
@@ -161,10 +168,7 @@ update msg model =
             in
             case pv of
                 Ok packet ->
-                    let
-                        throwaway =
-                            Debug.log "" packet
-                    in
+                    -- Packet decoding was successful
                     ( model
                     , Cmd.none
                     )
@@ -173,6 +177,9 @@ update msg model =
                     let
                         errorMessage =
                             handleDecodeError error
+
+                        throwaway =
+                            Debug.log "Error Decoding!" errorMessage
                     in
                     ( model, Cmd.none )
 
@@ -443,11 +450,19 @@ parseFloat str =
 -- Changes decoders
 
 
-decodeChangesPacket : Decode.Decoder ChangesPacket
-decodeChangesPacket =
+marketUpdateDecoder : Decode.Decoder MarketUpdate
+marketUpdateDecoder =
+    Decode.succeed MarketUpdate
+        |> required "product_id" Decode.string
+        |> required "time" Decode.string
+        |> required "changes" (Decode.list changesPacketDecoder)
+
+
+changesPacketDecoder : Decode.Decoder ChangesPacket
+changesPacketDecoder =
     Decode.list Decode.string
 
 
-parseChangesPacket : E.Value -> Result.Result Decode.Error ChangesPacket
+parseChangesPacket : E.Value -> Result.Result Decode.Error MarketUpdate
 parseChangesPacket packet =
-    Decode.decodeValue decodeChangesPacket packet
+    Decode.decodeValue marketUpdateDecoder packet

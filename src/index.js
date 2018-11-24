@@ -118,8 +118,8 @@ const onMessage = evt => {
       console.log("sending:", data)
       app.ports.receiveSnapshot.send(data)
     case "l2update":
-      // console.log("L2 Update ///");
-      // console.log(data);
+      console.log("L2 Update ///");
+      console.log(data);
   }
 
   // console.log("/////////////////////////////////");
