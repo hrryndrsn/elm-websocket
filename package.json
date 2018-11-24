@@ -17,6 +17,7 @@
   },
   "homepage": "https://github.com/hrryndrsn/elm-websocket#readme",
   "dependencies": {
-    "d3": "^5.7.0"
+    "d3": "^5.7.0",
+    "d3-fetch": "^1.1.2"
   }
 }

@@ -2,7 +2,7 @@ port module Main exposing (Model, Msg(..), cache, init, main, receiveWS, update,
 
 import Browser
 import Html exposing (Html, button, div, h1, img, input, p, text)
-import Html.Attributes exposing (src)
+import Html.Attributes exposing (class, src)
 import Html.Events exposing (onClick, onInput)
 import Json.Decode as Decode
 import Json.Decode.Pipeline exposing (hardcoded, optional, required)
@@ -167,26 +167,29 @@ view model =
     div []
         [ div []
             [ div []
-                [ h1 []
-                    [ text
-                        "websocket fun"
-                    ]
-                , div []
-                    (List.map (\chatString -> p [] [ text chatString ]) model.chatStream
-                        |> List.reverse
-                    )
-                , div []
-                    [ input [ onInput ChangedInput ] []
-                    , button [ onClick (SendWS model.inputText) ] [ text " send ws" ]
-                    ]
-                , svg []
-                    [ rect [ width "50", height "50", fill "blank", x "100", y "100" ] []
-                    , rect [ width "50", height "50", fill "blank", x "100", y "100" ] []
-                    , rect [ width "50", height "50", fill "blank", x "100", y "100" ] []
-                    , rect [ width "50", height "50", fill "blank", x "100", y "100" ] []
-                    , rect [ width "50", height "50", fill "blank", x "100", y "100" ] []
+                [ div [ class "d3" ]
+                    [ svg []
+                        []
                     ]
                 ]
+            ]
+        ]
+
+
+renderPlainPage : String -> List String -> Html Msg
+renderPlainPage inputText chatStream =
+    div []
+        [ h1 []
+            [ text
+                "websocket fun"
+            ]
+        , div []
+            (List.map (\chatString -> p [] [ text chatString ]) chatStream
+                |> List.reverse
+            )
+        , div []
+            [ input [ onInput ChangedInput ] []
+            , button [ onClick (SendWS inputText) ] [ text " send ws" ]
             ]
         ]
 

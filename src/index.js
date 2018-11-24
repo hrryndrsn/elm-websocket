@@ -2,6 +2,8 @@ import "./main.css";
 import { Elm } from "./Main.elm";
 import registerServiceWorker from "./registerServiceWorker";
 import * as d3 from "d3";
+import * as fetch from 'd3-fetch';
+// import tempData from "./tempData.tsv"
 
 //elm st
 const app = Elm.Main.init({
@@ -43,7 +45,7 @@ window.addEventListener("resize", event => {
 });
 
 // Create WebSocket connection.
-const websocket = new WebSocket("wss://www.deribit.com/ws/api/v1/");
+const websocket = new WebSocket("wss://ws-feed.pro.coinbase.com");
 
 //register event handlers below
 websocket.onopen = function(evt) {
@@ -63,12 +65,44 @@ websocket.onerror = function(evt) {
 const onOpen = evt => {
   console.log("Websocket | Open event");
   //when the websocket is ready, fire the message to be echoed
-  const message = {
-    action: "/api/v1/public/getinstruments",
-    arguments: { expired: false }
-  }; //send an object
+  const sub = {
+    "type": "subscribe",
+    "product_ids": [
+        "ETH-EUR"
+    ],
+    "channels": [
+        "level2",
+        "heartbeat",
+        {
+            "name": "ticker",
+            "product_ids": [
+                "ETH-BTC",
+                "ETH-USD"
+            ]
+        }
+    ]
+  }; 
+  const unsub = {
+    "type": "unsubscribe",
+    "product_ids": [
+        "ETH-USD"
+    ],
+    "channels": [
+        "level2",
+        "heartbeat",
+        {
+            "name": "ticker",
+            "product_ids": [
+                "ETH-BTC",
+                "ETH-USD"
+            ]
+        }
+    ]
+  }; 
+  //send an object
   // have to stringify it when sending
-  websocket.send(JSON.stringify(message));
+  websocket.send(JSON.stringify(sub));
+  setTimeout(() => websocket.send(JSON.stringify(unsub)), 2000)
 };
 
 const onClose = evt => {
@@ -78,6 +112,14 @@ const onClose = evt => {
 const onMessage = evt => {
   // parse the stringified message
   const data = JSON.parse(evt.data);
+  switch(data.type) {
+    case "snapshot":
+      console.log("snapshot ///");
+      app.ports.receiveWS.send(data.type)
+    case "l2update":
+      console.log("L2 Update ///");
+  }
+
   console.log("/////////////////////////////////");
   console.log("WS RECEIVED");
   console.log(data);
@@ -90,58 +132,9 @@ const onError = evt => {
   console.log("Websocket | Error event", evt);
 };
 
-// generate access key code
-
-let access_key = "2YZn85siaUf5A";
-let secret_key = "BTMSIAJ8IYQTAV4MLN88UAHLIUNYZ3HN";
-
-function get_signature(action, args) {
-  let nonce = new Date().getTime().toString();
-
-  let signatureString =
-    "_=" +
-    nonce +
-    "&_ackey=" +
-    access_key +
-    "&_acsec=" +
-    secret_key +
-    "&_action=" +
-    action;
-
-  Object.keys(args)
-    .sort()
-    .forEach(key => {
-      signatureString += "&";
-      signatureString += key;
-      signatureString += "=";
-
-      let value = args[key];
-      if (Array.isArray(value)) {
-        value = value.join("");
-      }
-
-      signatureString += value.toString();
-    });
-  let signatureStringEncoded = new TextEncoder("utf-8").encode(signatureString);
-  let binaryHash = crypto.subtle.digest("SHA-256", signatureStringEncoded);
-  return access_key + "." + nonce.toString() + "." + btoa(binaryHash);
-}
 
 // register service worker (comes with create-elm-app)
 registerServiceWorker();
 
 
-/////////////////////////////////////////////////////////////////////////////////////////////////
-//d3
-const data = [12, 24, 50, 200, 100]
-const rectWidth = 50
-
-d3.selectAll('rect')
-  .data(data)
-  .attr('x', (d, i) => i * rectWidth)
-  .attr('y', d => 199 - d)
-  .attr('width', rectWidth)
-  .attr('height', d => d)
-  .attr('fill', 'blue')
-  .attr('stroke', 'red')
 
