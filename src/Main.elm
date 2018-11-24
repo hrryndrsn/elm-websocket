@@ -1,7 +1,7 @@
 port module Main exposing (Model, Msg(..), cache, init, main, receiveSnapshot, receiveWS, update, view, window)
 
 import Browser
-import Html exposing (Html, button, div, h1, img, input, p, text)
+import Html exposing (Html, button, div, h1, h2, img, input, li, p, text, ul)
 import Html.Attributes exposing (class, src)
 import Html.Events exposing (onClick, onInput)
 import Json.Decode as Decode
@@ -226,15 +226,78 @@ handleDecodeError error =
 view : Model -> Html Msg
 view model =
     div []
-        [ div []
-            [ div []
-                [ div [ class "d3" ]
-                    [ svg []
-                        []
-                    ]
+        [ div [ class "header" ]
+            [ h2 [] [ text model.orderBook.productId ] ]
+        , div
+            [ class "orderbook" ]
+            [ div [ class "asks" ]
+                [ div [ class "title" ] [ text "Asks" ]
+                , div [ class "table" ] (List.map renderOrderList model.orderBook.asks)
+                ]
+            , div [ class "bids" ]
+                [ div [ class "title" ] [ text "Bids" ]
+                , div [ class "table" ] (List.map renderOrderList model.orderBook.bids)
                 ]
             ]
         ]
+
+
+renderOrderList : FloatOrder -> Html msg
+renderOrderList order =
+    let
+        x =
+            findHead order
+
+        y =
+            findEnd order
+    in
+    div [ class "row" ]
+        [ div []
+            [ text "price: "
+            , text (String.fromFloat x)
+            ]
+        , div []
+            [ text " size: "
+            , text (String.fromFloat y)
+            ]
+        ]
+
+
+findHead : List Float -> Float
+findHead floatList =
+    let
+        tryHead =
+            List.head floatList
+    in
+    case tryHead of
+        Just float ->
+            float
+
+        Nothing ->
+            0.0
+
+
+findEnd : List Float -> Float
+findEnd floatList =
+    let
+        tryTail =
+            List.tail floatList
+    in
+    case tryTail of
+        Just list ->
+            let
+                end =
+                    List.head list
+            in
+            case end of
+                Just float ->
+                    float
+
+                Nothing ->
+                    0.0
+
+        Nothing ->
+            0.0
 
 
 renderPlainPage : String -> List String -> Html Msg
@@ -270,7 +333,7 @@ main =
 
 
 
--- Subscriptions
+-- SUBSCRIPTIONS
 
 
 subscriptions : Model -> Sub Msg
