@@ -43,7 +43,7 @@ type alias Model =
     { counter : Int
     , window : WindowEvent
     , inputText : String
-    , snapshot : Snapshot
+    , orderBook : OrderBook
     }
 
 
@@ -72,9 +72,14 @@ type alias Order =
     List String
 
 
+type alias FloatOrder =
+    List Float
+
+
 type alias OrderBook =
-    { asks : List Order
-    , bids : List Order
+    { productId : String
+    , asks : List FloatOrder
+    , bids : List FloatOrder
     }
 
 
@@ -83,8 +88,8 @@ init =
     ( { counter = 0
       , window = { width = 5, height = 5 }
       , inputText = ""
-      , snapshot =
-            { productID = "empty"
+      , orderBook =
+            { productId = "empty"
             , asks = []
             , bids = []
             }
@@ -166,11 +171,17 @@ update msg model =
             case pv of
                 Ok snapshot ->
                     let
+                        floatAsks =
+                            List.map parseFloatOrder snapshot.asks
+
+                        floatBids =
+                            List.map parseFloatOrder snapshot.bids
+
                         newOrderBook =
-                            OrderBook snapshot.asks snapshot.bids
+                            OrderBook snapshot.productID floatAsks floatBids
                     in
                     ( { model
-                        | snapshot = snapshot
+                        | orderBook = newOrderBook
                       }
                     , Cmd.none
                     )
@@ -315,3 +326,31 @@ snapshotDecoder =
 parseWSSnapshot : E.Value -> Result.Result Decode.Error Snapshot
 parseWSSnapshot snap =
     Decode.decodeValue snapshotDecoder snap
+
+
+parseFloatOrder : Order -> List Float
+parseFloatOrder order =
+    let
+        strList =
+            returnStrList order
+    in
+    List.map parseFloat strList
+
+
+returnStrList : Order -> List String
+returnStrList order =
+    List.map (\o -> o) order
+
+
+parseFloat : String -> Float
+parseFloat str =
+    let
+        tryFloat =
+            String.toFloat str
+    in
+    case tryFloat of
+        Just float ->
+            float
+
+        Nothing ->
+            0.0
