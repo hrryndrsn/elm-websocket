@@ -115,14 +115,15 @@ const onMessage = evt => {
   switch(data.type) {
     case "snapshot":
       console.log("snapshot ///");
-      app.ports.receiveWS.send(data.type)
+      console.log("sending:", data)
+      app.ports.receiveSnapshot.send(data)
     case "l2update":
       console.log("L2 Update ///");
   }
 
-  console.log("/////////////////////////////////");
-  console.log("WS RECEIVED");
-  console.log(data);
+  // console.log("/////////////////////////////////");
+  // console.log("WS RECEIVED");
+  // console.log(data);
 
   //send the data back to elm
   // app.ports.receiveWS.send(data);

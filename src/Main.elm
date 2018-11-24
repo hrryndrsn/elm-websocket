@@ -1,4 +1,4 @@
-port module Main exposing (Model, Msg(..), cache, init, main, receiveWS, update, view, window)
+port module Main exposing (Model, Msg(..), cache, init, main, receiveSnapshot, receiveWS, update, view, window)
 
 import Browser
 import Html exposing (Html, button, div, h1, img, input, p, text)
@@ -29,6 +29,9 @@ port sendWS : E.Value -> Cmd msg
 port window : (E.Value -> msg) -> Sub msg
 
 
+port receiveSnapshot : (E.Value -> msg) -> Sub msg
+
+
 port receiveWS : (E.Value -> msg) -> Sub msg
 
 
@@ -40,7 +43,7 @@ type alias Model =
     { counter : Int
     , window : WindowEvent
     , inputText : String
-    , chatStream : List String
+    , snapshot : Snapshot
     }
 
 
@@ -58,12 +61,33 @@ type alias WSMessageIn =
     String
 
 
+type alias Snapshot =
+    { productID : String
+    , asks : List Order
+    , bids : List Order
+    }
+
+
+type alias Order =
+    List String
+
+
+type alias OrderBook =
+    { asks : List Order
+    , bids : List Order
+    }
+
+
 init : ( Model, Cmd Msg )
 init =
     ( { counter = 0
       , window = { width = 5, height = 5 }
       , inputText = ""
-      , chatStream = [ "" ]
+      , snapshot =
+            { productID = "empty"
+            , asks = []
+            , bids = []
+            }
       }
     , Cmd.none
     )
@@ -78,6 +102,7 @@ type Msg
     | SendWS WSMessageOut
     | Changed E.Value
     | ReceiveWS E.Value
+    | ReceiveSnapshot E.Value
     | ChangedInput String
     | NoOp
 
@@ -122,8 +147,30 @@ update msg model =
             in
             case pv of
                 Ok string ->
+                    ( model
+                    , Cmd.none
+                    )
+
+                Err error ->
+                    let
+                        errorMessage =
+                            handleDecodeError error
+                    in
+                    ( model, Cmd.none )
+
+        ReceiveSnapshot value ->
+            let
+                pv =
+                    parseWSSnapshot value
+            in
+            case pv of
+                Ok snapshot ->
+                    let
+                        newOrderBook =
+                            OrderBook snapshot.asks snapshot.bids
+                    in
                     ( { model
-                        | chatStream = string :: model.chatStream
+                        | snapshot = snapshot
                       }
                     , Cmd.none
                     )
@@ -132,6 +179,9 @@ update msg model =
                     let
                         errorMessage =
                             handleDecodeError error
+
+                        throwaway =
+                            Debug.log "Error Decoding!" errorMessage
                     in
                     ( model, Cmd.none )
 
@@ -145,11 +195,11 @@ update msg model =
 handleDecodeError : Decode.Error -> String
 handleDecodeError error =
     case error of
-        Decode.Field str errr ->
-            "Field Error"
+        Decode.Field str err ->
+            "Field Error: " ++ str ++ Decode.errorToString err
 
         Decode.Index int err ->
-            "Index Error"
+            "Index Error" ++ String.fromInt int ++ Decode.errorToString err
 
         Decode.OneOf errList ->
             "List of Errors"
@@ -217,6 +267,7 @@ subscriptions model =
     Sub.batch
         [ window Changed
         , receiveWS ReceiveWS
+        , receiveSnapshot ReceiveSnapshot
         ]
 
 
@@ -241,3 +292,26 @@ windowEventDecoder =
 parseWSVal : E.Value -> Result.Result Decode.Error String
 parseWSVal value =
     Decode.decodeValue Decode.string value
+
+
+orderDecoder : Decode.Decoder Order
+orderDecoder =
+    Decode.list Decode.string
+
+
+orderListDecoder : Decode.Decoder (List Order)
+orderListDecoder =
+    Decode.list orderDecoder
+
+
+snapshotDecoder : Decode.Decoder Snapshot
+snapshotDecoder =
+    Decode.succeed Snapshot
+        |> required "product_id" Decode.string
+        |> required "asks" (Decode.list orderDecoder)
+        |> required "bids" orderListDecoder
+
+
+parseWSSnapshot : E.Value -> Result.Result Decode.Error Snapshot
+parseWSSnapshot snap =
+    Decode.decodeValue snapshotDecoder snap
