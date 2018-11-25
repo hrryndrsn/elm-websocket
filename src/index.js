@@ -122,10 +122,6 @@ const onMessage = evt => {
       console.log(data);
   }
 
-  // console.log("/////////////////////////////////");
-  // console.log("WS RECEIVED");
-  // console.log(data);
-
   //send the data back to elm
   app.ports.receiveUpdate.send(data);
 };

@@ -81,7 +81,14 @@ type alias ChangesPacket =
 
 
 type alias Changes =
-    List Float
+    List Change
+
+
+type alias Change =
+    { side : String
+    , price : Float
+    , size : Float
+    }
 
 
 type alias Order =
@@ -169,6 +176,20 @@ update msg model =
             case pv of
                 Ok packet ->
                     -- Packet decoding was successful
+                    let
+                        changes =
+                            packet.changes
+
+                        derp =
+                            Debug.log "changes" changes
+
+                        -- map over the string list and convert the changes into values we can work with
+                        convertedChanges =
+                            List.map deconstructChangeList changes
+
+                        th =
+                            Debug.log "parsed packet" convertedChanges
+                    in
                     ( model
                     , Cmd.none
                     )
@@ -221,6 +242,50 @@ update msg model =
 
         NoOp ->
             ( model, Cmd.none )
+
+
+deconstructChangeList : ChangesPacket -> Change
+deconstructChangeList packet =
+    case packet of
+        a :: b :: c ->
+            let
+                fb =
+                    extractFloat [ b ]
+
+                fc =
+                    extractFloat c
+
+                derp =
+                    Debug.log "x"
+            in
+            Change a fb fc
+
+        -- destructor the array like this?
+        x ->
+            Change "empty" 0.0 0.0
+
+
+extractFloat : List String -> Float
+extractFloat list =
+    let
+        tryHead =
+            List.head list
+    in
+    case tryHead of
+        Just string ->
+            let
+                tryConv =
+                    String.toFloat string
+            in
+            case tryConv of
+                Just float ->
+                    float
+
+                Nothing ->
+                    0.0
+
+        Nothing ->
+            0.0
 
 
 handleDecodeError : Decode.Error -> String
