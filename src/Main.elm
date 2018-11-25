@@ -180,17 +180,47 @@ update msg model =
                         changes =
                             packet.changes
 
-                        derp =
-                            Debug.log "changes" changes
-
                         -- map over the string list and convert the changes into values we can work with
                         convertedChanges =
                             List.map deconstructChangeList changes
 
-                        th =
-                            Debug.log "parsed packet" convertedChanges
+                        -- for each change, we want to update either the ask array
+                        updateAsks =
+                            List.map (\change -> updateOrderBook change model.orderBook.asks) convertedChanges
+
+                        -- for each change, we want to update either the bid  array
+                        updateBids =
+                            List.map (\change -> updateOrderBook change model.orderBook.bids) convertedChanges
+
+                        oldOrderBook =
+                            model.orderBook
+
+                        newAsks =
+                            case lastElem updateAsks of
+                                Just list ->
+                                    list
+
+                                Nothing ->
+                                    []
+
+                        newBids =
+                            case lastElem updateBids of
+                                Just list ->
+                                    list
+
+                                Nothing ->
+                                    []
+
+                        newOrderBook =
+                            { oldOrderBook
+                                | asks = newAsks
+                                , bids = newBids
+                            }
+
+                        newBook =
+                            OrderBook model.orderBook.productId
                     in
-                    ( model
+                    ( { model | orderBook = newOrderBook }
                     , Cmd.none
                     )
 
@@ -242,6 +272,33 @@ update msg model =
 
         NoOp ->
             ( model, Cmd.none )
+
+
+lastElem : List a -> Maybe a
+lastElem =
+    List.foldl (Just >> always) Nothing
+
+
+updateOrderBook : Change -> List FloatOrder -> List FloatOrder
+updateOrderBook change list =
+    List.map (\order -> comparePrice change order) list
+
+
+comparePrice : Change -> List Float -> List Float
+comparePrice change order =
+    let
+        orderPrice =
+            findHead order
+
+        size =
+            findEnd order
+    in
+    case change.price == orderPrice of
+        True ->
+            [ orderPrice, change.size ]
+
+        False ->
+            order
 
 
 deconstructChangeList : ChangesPacket -> Change
